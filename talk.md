@@ -7,18 +7,25 @@ author
 :   Jonathan Mukai-Heidt
 
 # Me
-{::comment}
-who am i?
 
-- consultant at Pivotal Labs
-- start up knockaround (three)
-- freelancer
-- ...and now...
-{:/comment}
+## Jonathan Mukai-Heidt
+## @johnnymukai
+## johnny@buildgroundwork.com
 
 # Groundwork
 {::comment}
   the mentorship schpiel
+{:/comment}
+
+# ...some history
+
+- Two years consulting at Pivotal Labs
+- Kicked around NYC start up scene
+- Freelance software developer
+
+# Many, many, many different projects
+{::comment}
+  at least six last year
 {:/comment}
 
 # Why I came to give this talk
@@ -29,12 +36,25 @@ who am i?
 {:/comment}
 
 # No one knows how to test controllers
+
+# Controller Testing Hall of Shame
+
+# Wait, testing... why?
 {::comment}
-  last year alone I worked on six projects
-  dozens of projects
+  - rails has awesome testing culture
+  - but just to make sure we're on the same page
+  - why do we write tests?
 {:/comment}
 
-# Controller testing hall of shame
+# Catching regression
+
+# Developing code in isolation
+{::comment}
+  - testing gives us a framework to write modular code in isolation
+  - good design, modular, composable
+{:/comment}
+
+# Back to the Hall of Shame
 
 # Stub all the things
 
@@ -44,21 +64,34 @@ who am i?
       # what is the what is the what
     end
 {: lang="ruby"}
+{::comment}
+  - so think about this in terms of what we just talked about
+  - too coupled to implementation
+  - does nothing for OO design
+{:/comment}
 
 # Everything is integration
+As a user...
+{::comment}
+  - Despite DHH, no.
+  - Does this drive good design? No! Your controller could be utter spaghetti code
+  - "But it works" -- not if you have to maintain it
+{:/comment}
 
 # No tests at all
+...
+{::comment}
+  You would be surprised how common this is, even among hardcore TDDers
+{:/comment}
 
 # Why does this happen?
 {::comment}
   Controllers are a funny thing. They are glue.
 
-  expand on this!
+  TODO: expand on this!
 - Why are you doing these wrong
 - There is something unique about Rails controllers that confuses people
-
 {:/comment}
-
 
 # there's not a lot of logic, or there shouldn't be!
 
@@ -67,13 +100,17 @@ who am i?
 # Rails controllers (+ responders) are awesomely declarative
 
 # What do we really mean when we say declarative
-
 - describe properties of the thing we want
-- no control structure (really!)
+- no logic (really!)
 
-# Look at this fucking controller
+# Imperative <-> Declarative
 {::comment}
-section
+  declarative as a spectrum
+{:/comment}
+
+# Look at how declarative Rails controllers can be
+{::comment}
+TODO: fill this out
 {:/comment}
 
 # NEW
@@ -90,7 +127,7 @@ section
 
 # And this is great!
 {::comment}
-why?
+TODO: why?
 {:/comment}
 
 # But it's not what 90% of the controllers I come across look like
@@ -106,7 +143,6 @@ why?
 Let's put the discussion of logic on hold for a second here
 and talk about some tests we can write
 to match Rails' awesome declarative controllers
-
 {:/comment}
 
 # What do we really care about in controllers?
@@ -215,6 +251,13 @@ section - should the following slides go after examples?
 # ActiveModel
 
 # Use it!
+
+# Thanks!
+
+## Jonathan Mukai-Heidt
+## @johnnymukai
+## johnny@buildgroundwork.com
+
 
 # junk bin
 
