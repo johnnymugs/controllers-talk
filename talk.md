@@ -8,9 +8,11 @@ author
 
 # Me
 
-## Jonathan Mukai-Heidt
-## @johnnymukai
-## johnny@buildgroundwork.com
+* Jonathan Mukai-Heidt
+
+* @johnnymukai
+
+* johnny@buildgroundwork.com
 
 # Groundwork
 {::comment}
@@ -33,6 +35,13 @@ author
   the reason for all this background is...
 - I've worked on countless Rails projects
 - No one seems to know what to do with controller tests
+{:/comment}
+
+# One day... あの日。。。
+{::comment}
+  one day I started working on a project with a dev much senior to me
+  he had strong opinions about controllers
+  thisishowwedoit.png
 {:/comment}
 
 # No one knows how to test controllers
@@ -248,15 +257,45 @@ section - should the following slides go after examples?
 - bulk creates
 - merging records
 
+# A divergence
+TODO: let's talk about motherfucking resources now.
+
 # ActiveModel
 
 # Use it!
 
-# Thanks!
+# An illustrative example
 
-## Jonathan Mukai-Heidt
-## @johnnymukai
-## johnny@buildgroundwork.com
+# Password Reset
+
+# Too simple to break out into a model
+Right?
+
+# Okay, it just fires off the job
+
+# Ah but wait, we want to tell users if they put in their e-mail wrong
+
+# Oh hold on, they might be locked out
+
+# Oh crap.
+
+# ActiveModel makes it simple
+
+# The lesson
+{::comment}
+this is what it's all about, make your web app about resources
+{:/comment}
+
+# Nouns, not verbs
+HTTP gives you all the verbs you need
+
+# Habbits
+
+# Thanks!
+Get in touch!
+* Jonathan Mukai-Heidt
+* @johnnymukai
+* johnny@buildgroundwork.com
 
 
 # junk bin
