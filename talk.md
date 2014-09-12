@@ -119,15 +119,18 @@ As a user...
 
 That's what leads to these anti-patterns
 
-# but there's hope!
+# But there's hope!
 
 # Rails controllers (+ responders) are awesomely declarative
+{::comment}
+Let's talk about what's great about controllers!
+{:/comment}
 
 # What do we really mean when we say declarative
-- describe properties of the thing we want
-- no logic (really!)
+- Describe properties of the thing we want
+- No logic (really!)
 
-# Imperative <-> Declarative
+# Imperative / Declarative
 {::comment}
   declarative as a spectrum
 {:/comment}
@@ -238,6 +241,8 @@ fil this out
 section - should the following slides go after examples?
 {:/comment}
 
+# Your test is like a check list
+
 # Easier to test
 
 # Simpler controllers
@@ -247,8 +252,6 @@ section - should the following slides go after examples?
 # No confusion about where things go (bulk creates, likes, etc)
 
 # Uniform controllers == more time spent on things that matter
-
-# What is the solution?
 
 # Footwork
 
@@ -273,7 +276,9 @@ section - should the following slides go after examples?
 - merging records
 
 # A divergence
+{::comment}
 TODO: let's talk about motherfucking resources now.
+{/::comment}
 
 # ActiveModel
 
@@ -375,7 +380,6 @@ this is what it's all about, make your web app about resources
 - Logic goes in models where it belongs
 - No confusion about where things go (bulk creates, likes, etc)
 - Uniform controllers == Less time to write
-
 
 # Thanks!
 
