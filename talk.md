@@ -6,6 +6,9 @@ subtitle
 author
 :   Jonathan Mukai-Heidt
 
+theme
+:   lightning-talk
+
 # Me
 
 * Jonathan Mukai-Heidt
