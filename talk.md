@@ -1,7 +1,7 @@
 # Controller Testing
 
 subtitle
-:   You're doing it wrong
+:   "You're doing it wrong"
 
 author
 :   Jonathan Mukai-Heidt
@@ -17,7 +17,9 @@ author
 # Groundwork
 {::comment}
   the mentorship schpiel
+TODO: logo, website link
 {:/comment}
+http://buildgroundwork.com
 
 # ...some history
 
@@ -268,46 +270,109 @@ TODO: let's talk about motherfucking resources now.
 
 # Password Reset
 
-# Too simple to break out into a model
-Right?
+Client wants to implement a simple password reset
 
-# Okay, it just fires off the job
+`/password_reset_requests/new`
+`/password_reset_requests/create`
 
-# Ah but wait, we want to tell users if they put in their e-mail wrong
+# Suspend your dis-belief, they are not using Devise yet
 
-# Oh hold on, they might be locked out
+# Legacy code base
 
-# Oh crap.
+`User.send_password_reset_email!`
+
+# Too simple to break out into a model?
+{::comment}
+There is existing code for tokens and stuff or what?
+{::/comment}
+
+{::comment}
+TODO:look this code up from a2
+{::/comment}
+
+# Okay, it just fires off a job
+
+# Requirements always change
+"Ah but wait, we want to tell users if they put in their e-mail wrong."
+
+# Seems easy enough to just add in the controller...
+
+# Add to our spec...
+
+`````
+context "with an e-mail for an existing user" do
+...
+end
+
+context "with an e-mail for a _____________" do
+...
+end
+
+`````
+{::comment}
+TODO: finish up here
+{::/comment}
+
+# Add to the implementation...
+
+`````
+if user = User.find_by_email(params[:email])
+  user.send_password_reset_email!
+else
+  flash[:alert] = "Looks like you don't have an account yet"
+end
+`````
+
+# Of course requirements change again
+"If the user is locked out of their account, we shouldn't send a password reset."
+
+# Ok, just change the spec...
+
+{::comment}
+TODO: finish up here
+{::/comment}
+
+# Uhhhhh...
+{::comment}
+TODO: finish up here
+{::/comment}
+
+# So where's your great controller strategy now Johnny?
 
 # ActiveModel makes it simple
+
+# this might seem contrived but I've seen this and worse
+- just a password_reset action on the users controller
+
 
 # The lesson
 {::comment}
 this is what it's all about, make your web app about resources
 {:/comment}
 
-# Nouns, not verbs
-HTTP gives you all the verbs you need
+# Think nouns (resources), not verbs
+
+# HTTP gives you all the verbs you need
 
 # Habbits
 
+# The wins
+- Easier to test
+- Simpler controllers
+- Logic goes in models where it belongs
+- No confusion about where things go (bulk creates, likes, etc)
+- Uniform controllers == Less time to write
+
+
 # Thanks!
+
 Get in touch!
+
 * Jonathan Mukai-Heidt
+
+* Groundwork
+
 * @johnnymukai
+
 * johnny@buildgroundwork.com
-
-
-# junk bin
-
-- everything after this slide is just notes
-
-# What do we actually mean by REST?
-
-# The hidden agenda is REST
-
-# Why REST? (* seriously)
-
-- what makes this approach better?
-
 
