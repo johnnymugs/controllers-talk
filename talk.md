@@ -22,6 +22,9 @@ TODO: logo, website link
 http://buildgroundwork.com
 
 # ...some history
+{::comment}
+  before Groundwork I...
+{:/comment}
 
 - Two years consulting at Pivotal Labs
 - Kicked around NYC start up scene
@@ -32,21 +35,20 @@ http://buildgroundwork.com
   at least six last year
 {:/comment}
 
-# Why I came to give this talk
+# Almost no one knows how to test controllers
 {::comment}
   the reason for all this background is...
 - I've worked on countless Rails projects
 - No one seems to know what to do with controller tests
+- Why I came to give this talk
 {:/comment}
 
-# One day... あの日。。。
+# One day... (あの日。。。)
 {::comment}
   one day I started working on a project with a dev much senior to me
   he had strong opinions about controllers
   thisishowwedoit.png
 {:/comment}
-
-# No one knows how to test controllers
 
 # Controller Testing Hall of Shame
 
@@ -57,15 +59,22 @@ http://buildgroundwork.com
   - why do we write tests?
 {:/comment}
 
-# Catching regression
+# Catching regressions
 
-# Developing code in isolation
+# Spec as documentation
+
+# (And so on)
+
+# Developing code in isolation!!!
 {::comment}
   - testing gives us a framework to write modular code in isolation
   - good design, modular, composable
 {:/comment}
 
 # Back to the Hall of Shame
+{::comment}
+  with the above in mind
+{:/comment}
 
 # Stub all the things
 
@@ -102,9 +111,13 @@ As a user...
   TODO: expand on this!
 - Why are you doing these wrong
 - There is something unique about Rails controllers that confuses people
+- there's not a lot of logic, or there shouldn't be!
+
 {:/comment}
 
-# there's not a lot of logic, or there shouldn't be!
+# Controllers are hard to test in isolation
+
+That's what leads to these anti-patterns
 
 # but there's hope!
 
