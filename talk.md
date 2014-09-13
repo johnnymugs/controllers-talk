@@ -19,7 +19,8 @@ theme
 
 # Groundwork
 {::comment}
-  the mentorship schpiel
+I'm a software mentor at Groundwork, a new mentorship-focused software consultancy in New York City
+Maybe elaborate.
 TODO: logo, website link
 {:/comment}
 http://buildgroundwork.com
@@ -36,6 +37,7 @@ http://buildgroundwork.com
 # Many, many, many different projects
 {::comment}
   at least six last year
+  the last three or four years I've worked on dozens of Rails projects
 {:/comment}
 
 # Almost no one knows how to test controllers
@@ -44,16 +46,20 @@ http://buildgroundwork.com
 - I've worked on countless Rails projects
 - No one seems to know what to do with controller tests
 - Why I came to give this talk
+Neither did I!
 {:/comment}
 
-# One day... (あの日。。。)
+# One day...
 {::comment}
   one day I started working on a project with a dev much senior to me
   he had strong opinions about controllers
-  thisishowwedoit.png
+  he employed a unique strategy
 {:/comment}
 
 # Controller Testing Hall of Shame
+{::comment}
+  before we get into it though let's look at some strategies that don't work
+{:/comment}
 
 # Wait, testing... why?
 {::comment}
@@ -91,6 +97,7 @@ http://buildgroundwork.com
   - so think about this in terms of what we just talked about
   - too coupled to implementation
   - does nothing for OO design
+  TODO: write this
 {:/comment}
 
 # Everything is integration
@@ -115,6 +122,7 @@ As a user...
 - Why are you doing these wrong
 - There is something unique about Rails controllers that confuses people
 - there's not a lot of logic, or there shouldn't be!
+TODO: there really is room for improvement/expansion here
 
 {:/comment}
 
@@ -122,16 +130,22 @@ As a user...
 
 That's what leads to these anti-patterns
 
+# People are confused about what to test
+
 # But there's hope!
 
 # Rails controllers (+ responders) are awesomely declarative
 {::comment}
+TODO: the things that make controllers confusing to test are due to how awesome rails controllers can be
 Let's talk about what's great about controllers!
 {:/comment}
 
 # What do we really mean when we say declarative
 - Describe properties of the thing we want
 - No logic (really!)
+{::comment}
+this is a term i'll toss around a lot so let's define it
+{:/comment}
 
 # Imperative / Declarative
 {::comment}
@@ -142,6 +156,16 @@ Let's talk about what's great about controllers!
 {::comment}
 TODO: fill this out
 {:/comment}
+
+# respond_to
+    # quickly declare formats
+    respond_to :html, :json
+
+# before_filter
+
+    # let's us do things like
+    before_filter :authenticate_user!
+{: lang="ruby"}
 
 # NEW
 
@@ -155,20 +179,32 @@ TODO: fill this out
 
 # DESTROY
 
+# Little to no logic in controllers
+{::comment}
+TODO: why?
+again, it's a spectrum obvi
+{:/comment}
+
 # And this is great!
 {::comment}
 TODO: why?
+because controllers should be a simple link between views and models
 {:/comment}
 
 # But it's not what 90% of the controllers I come across look like
 
 # Because of muddying these nice declarative controllers with business logic
 
+# Business logic belongs in models
+You've heard this many times already
+
 # But I thought this talk was about testing?
 
 # Yes!
 
-# Declarative tests!
+# Tests should help us write better code
+
+# Declarative controller? Declarative tests!
 {::comment}
 Let's put the discussion of logic on hold for a second here
 and talk about some tests we can write
@@ -176,6 +212,9 @@ to match Rails' awesome declarative controllers
 {:/comment}
 
 # What do we really care about in controllers?
+{::comment}
+okay, how do we do it?
+{:/comment}
 
 # AAPR
 
@@ -186,81 +225,79 @@ to match Rails' awesome declarative controllers
 # Presence of resource
 
 # Response
+{::comment}
+Something people often miss is that we can request an object in many formats, it should be the same basic resource
+{:/comment}
 
 # What does it look like in action?
+{::comment}
+You'll notice these are very repetitive in implementation
+{:/comment}
 
 # Shared examples
+
+{::comment}
+TODO: consider doing before / after
+{:/comment}
 
 # Authentication
 
 # Authentication shared example
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Authentication shared example in action
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Authorization
 
 # Authorization shared example
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Authorization shared example in action
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Presence
 
 # Presence shared example
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Presence shared example in action
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Response
 
 # Response shared example
 {::comment}
-fil this out
+TODO: fil this out
 {:/comment}
 
 # Response shared example in action
 {::comment}
-fil this out
-{:/comment}
-
-# Why is this such a good thing?
-{::comment}
-section - should the following slides go after examples?
+TODO: fil this out
 {:/comment}
 
 # Your test is like a check list
+{::comment}
+"build to spec" like in the actual meaning of the term
+{:/comment}
 
-# Easier to test
+# But Johnny, what about...
 
-# Simpler controllers
-
-# Logic goes in models where it belongs
-
-# No confusion about where things go (bulk creates, likes, etc)
-
-# Uniform controllers == more time spent on things that matter
-
-# Footwork
-
-- No gem!
-- This will vary from project to project
-- Figure out how your project will handle these situations
+- Likes/Bookmarks/Ratings
+- Bulk creates
+- Merging records
 
 # "Skinny controller, fat model"
 
@@ -272,15 +309,10 @@ section - should the following slides go after examples?
 - Laziness is a programmer virtue
 - Take my advice and set yourself up for long term laziness
 
-# But Johnny, what about...
-
-- likes
-- bulk creates
-- merging records
-
 # A divergence
 {::comment}
 TODO: let's talk about motherfucking resources now.
+TODO: a better transition here would be great
 {/::comment}
 
 # ActiveModel
@@ -312,6 +344,10 @@ TODO:look this code up from a2
 {::/comment}
 
 # Okay, it just fires off a job
+{::comment}
+TODO: show the spec and it's slow divergence from nice controller
+{::/comment}
+
 
 # Requirements always change
 "Ah but wait, we want to tell users if they put in their e-mail wrong."
@@ -361,8 +397,13 @@ TODO: finish up here
 # So where's your great controller strategy now Johnny?
 
 # ActiveModel makes it simple
+{::comment}
+TODO: code code code
+{::/comment}
 
-# this might seem contrived but I've seen this and worse
+# And our controller is back to being nice and simple
+
+# This might seem contrived but I've seen this and worse
 - just a password_reset action on the users controller
 
 
@@ -375,14 +416,35 @@ this is what it's all about, make your web app about resources
 
 # HTTP gives you all the verbs you need
 
+# Footwork
+
+- No gem!
+- This will vary from project to project
+- Figure out how your project will handle these situations
+
 # Habbits
 
-# The wins
-- Easier to test
-- Simpler controllers
-- Logic goes in models where it belongs
-- No confusion about where things go (bulk creates, likes, etc)
-- Uniform controllers == Less time to write
+# Hence the controller checklist
+{::comment}
+  it just helps you develop a habbit
+{:/comment}
+
+# Easier to test
+
+# Simpler controllers
+
+# Logic goes in models where it belongs
+
+# No confusion about where things go (bulk creates, likes, etc)
+
+# Uniform controllers == more time spent on things that matter
+
+{::comment}
+  TODO: stronger summary
+Your testing strategy should help drive good code
+Your controllers should be simple and resource driven
+You can employ a testing strategy that helps you achieve this
+{:/comment}
 
 # Thanks!
 
