@@ -6,9 +6,6 @@ subtitle
 author
 :   Jonathan Mukai-Heidt
 
-theme
-:   lightning-talk
-
 # Me
 
 * Jonathan Mukai-Heidt
@@ -141,43 +138,105 @@ Let's talk about what's great about controllers!
 {:/comment}
 
 # What do we really mean when we say declarative
-- Describe properties of the thing we want
-- No logic (really!)
 {::comment}
 this is a term i'll toss around a lot so let's define it
 {:/comment}
+
+- Describe properties of the thing we want
+- No logic (really!)
+
+# Imperative
+
+"When deleting a user, if the current user is an admin user, then allow the deletion; if the current user is not an admin, do not allow the deletion to finish."
+
+# Declarative
+
+"Only admin users can delete another user."
+
+# Imperative
+
+"When a request for a resource comes in, if the request is for JSON, then fetch the resource and render it from the JSON template; if the request is for HTML, then fetch the resource and render the HTML template; if the request is for another format like PDF, return an error."
+
+# Declarative
+
+"This controller returns a resource represented as JSON or HTML."
 
 # Imperative / Declarative
 {::comment}
   declarative as a spectrum
 {:/comment}
 
+# Ruby is imperative but it lets us write declarative code
+
 # Look at how declarative Rails controllers can be
 {::comment}
 TODO: fill this out
+TODO: do people know about responders?
+{:/comment}
+
+# Rails 4
+{::comment}
+everyone knows about Rails responders at this point I hope
+TODO: deeper explanation
 {:/comment}
 
 # respond_to
     # quickly declare formats
+
     respond_to :html, :json
+{: lang="ruby"}
 
 # before_filter
 
     # let's us do things like
+
     before_filter :authenticate_user!
+{: lang="ruby"}
+
+# before_filter
+
+    # Using Authority gem
+
+    before_filter :authorize_actions_for SomeResource 
+{: lang="ruby"}
+
+# before_filter
+
+    # Using CanCan gem
+
+    before_filter :load_and_authorize_resource :some_resource
 {: lang="ruby"}
 
 # NEW
 
+    def new
+      respond_with(@pizza = Pizza.new)
+    end
+{: lang="ruby"}
+
+
 # CREATE
+
+    def create
+      respond_with(@pizza = Pizza.create(pizza_params))
+    end
+{: lang="ruby"}
 
 # UPDATE
 
+    def create
+      respond_with(@pizza.update_attributes(pizza_params))
+    end
+{: lang="ruby"}
+
 # SHOW
 
-# INDEX
+    def create
+      respond_with(@pizza = Pizza.find_by_param!(params[:id]))
+    end
+{: lang="ruby"}
 
-# DESTROY
+# ...and so on...
 
 # Little to no logic in controllers
 {::comment}
