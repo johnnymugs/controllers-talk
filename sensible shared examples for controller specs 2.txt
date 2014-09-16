@@ -1,0 +1,302 @@
+﻿Sensible shared examples for controller specs
+When written properly, Rails controllers are so idiomatic they’re almost redundant. This is a good thing. Controllers should only be the glue between our view and model layers, so they are ideally very consistent and very simple. All sane controller actions do one “big” thing and one thing only: they fetch a resource, they create one, and so on. But there are many “little” concerns: what formats does the action respond to? How does an unauthenticated request behave? What about unauthorized?
+
+
+Rails is nice because we can write the main action of a controller in a simple and idiomatic way, and we can declare those small but important details clearly. Despite this simplicity, or perhaps because of it, there is a lot of confusion about how to test Rails controllers.
+
+
+The glue-like nature of controllers tempts us to write specs which feel very “integration-y” and tend toward a mirror image of our implementation. This kind of test isn’t good for driving out good code as it just anticipates our implementation, and it’s no good for catching regressions since it’s so tightly coupled to integration you have to fix it everytime you change anything anyway.
+
+
+Because of the declarative and repetitive nature of the controller “details” we discussed, testing them is often written off as “just testing Rails” which of course we don’t want to waste time doing. I’ve also come across projects where controllers are tested at the integration level which is unfortunate because these tests are often slow and never exhaustive.
+
+
+It’s unfortunate that these important details are often exactly what is overlooked in tests. These little differences where our controllers stray from the standard controller are what we should be most concerned with testing. Perhaps the reason these are thought of as “testing Rails” is because Rails makes it so easy to specify this behavior in a declarative way. We don’t want to test that Rails behaves the way we expect it, we want to test that we’d invoked the right behavior from Rails.
+
+
+The “smallness” of these concerns and the ease with which Rails allows us to simply declare their behavior doesn’t mean we don’t want tests to drive them out, we simply want equally declarative tests. Fortunately RSpec’s shared examples provide just such a mechanism.
+Authentication
+Let’s take a spin through testing the things we do care about. Say we have a basic blog app and we’ve been tasked with adding the ability to comment on posts. To start, let’s say that only logged in users can post comments. Our spec for the new action might look like this:
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post } }
+
+
+    context "with a logged in user" do
+      it "should not redirect to the login page" do
+        response.should_not be_redirect
+      end
+    end
+
+
+    context "with an unauthenticated user" do
+      it "should redirect to the login page" do
+        response.should be_redirect_to(sign_in_path)
+      end
+    end
+  end
+end
+
+
+This is all well and good but you can imagine how this would quickly get to be a drag if we had to include this in every controller spec for every action that required authentication. Every action either does or does not require authentication and we want to specify this behavior in the specs but we don’t have to duplicate these two fairly verbose contexts everywhere. Instead let’s create a shared example:
+
+
+shared_examples_for "an action that requires a login" do
+  before { sign_out :user }
+  it { should respond_with_redirect_to(sign_in_path) }
+end
+
+
+Now our spec looks like this:
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post } }
+
+
+    it_should_behave_like "an action that requires a login"
+  end
+end
+
+
+We have a nice shared example for any action that requires login. It simply logs out the current user, tries the subject, and asserts that we are redirected to the sign in page. This is the common behavior that we want for any action that requires authentication. Now we can just declare that we want this behavior in any controller action spec.
+
+
+Requiring authentication but not redirecting
+Let’s say, hypothetically, that create requests come in as AJAX requests from some client-side JavaScript. If a post request comes in from an unauthenticated user, we just want to respond with a 401 (http://flic.kr/p/aV6jwe) rather than a redirect.
+
+
+shared_examples_for "a non-navigational action that requires a login" do
+  before { sign_out :user }
+  it { should respond_with_status(:unauthorized) }
+end
+
+
+
+
+Now our spec looks like:
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+  before { sign_in :user, current_user }
+
+
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post } }
+
+
+    it_should_behave_like "an action that requires a login"
+  end
+
+
+  describe "#create" do
+    subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+    let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+
+    it_should_behave_like "a non-navigation action that requires a login"
+  end
+end
+
+
+Authorization
+Besides authentication, we also want to ensure that our controller action handles unauthorized requests properly. To that end we have a user in our test fixture data, Mallory, who is authenticatable but not authorized to do anything. For anything that an unauthorized user does, we want to return a 404. http://flic.kr/p/aV6juR 
+
+
+shared_examples_for "an action that requires authorization" do
+  before { sign_in :user, users(:mallory) }
+  it { should respond_with_status(:missing) }
+end
+
+
+Now our controller specs look like…
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+  before { sign_in :user, current_user }
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post } }
+
+
+    it_should_behave_like "an action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+  end
+
+
+  describe "#create" do
+    subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+    let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+
+    it_should_behave_like "a non-navigation action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+  end
+end[a][b]
+
+
+Acceptable formats
+Now things start to get interesting. We want to specify which actions respond to which formats. This shared example is much more complicated than our previous examples but its strength is in being able to easily declare which formats a particular action responds to and be done with it. As long as we specify format in our subject and set the default format the top of our spec we’re good to go[c]. The shared example first asserts that the acceptable formats we specify work, then it asserts that unacceptable formats return 406 http://flic.kr/p/aV6jxa
+
+
+shared_examples_for "an action that returns" do |*acceptable_formats|
+  acceptable_formats.each do |acceptable_format|
+    context "expecting a response in #{acceptable_format} format" do
+      let(:format) { acceptable_format }
+      it { should_not respond_with_status(:not_acceptable) }
+    end
+  end
+
+
+  (%i(html js json xml csv) - acceptable_formats.collect(&:to_sym)).each do |unacceptable_format|
+    context "expecting a response in #{unacceptable_format} format" do
+      let(:format) { unacceptable_format }
+      it { should respond_with_status(:not_acceptable) }
+    end
+  end
+end
+
+
+Now that we have something to assert about the show action, I’ve added it here.
+Our spec should now look like:
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+  let(:format) { :html }
+
+
+  before { sign_in :user, current_user }
+
+
+  describe "#show" do
+    subject { -> { get :show, id: comment, format: format } }
+    let(:comment) { blog_post.comments.first }
+
+
+    it_should_behave_like "an action that returns", :html
+  end
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post, format: format } }
+
+
+    it_should_behave_like "an action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+    it_should_behave_like "an action that returns", :html
+  end
+
+
+  describe "#create" do
+    subject { -> { post :create, blog_post_id: blog_post, comment: params, format: format } }
+    let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+
+    it_should_behave_like "a non-navigation action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+    it_should_behave_like "an action that returns", :html, :json
+  end
+end
+Presence of resource
+Finally, we want a way to declare which resources are require[d] for loading a particular resource. In our example, we want to make sure a particular blog post parent resource exists before we create a comment for it. This shared example gives us a flexible way to declare which resources must be loaded for a particular action.
+
+
+shared_examples_for "an action that requires" do |*resources|
+  resources.each do |resource|
+    context "with an invalid or missing #{resource}" do
+      let(resource) { double(to_param: "does-not-exist", reload: nil) }
+      it { should respond_with_status(:missing) }
+    end
+  end
+end
+
+
+
+
+Now our spec looks like:
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+  let(:format) { :html }
+
+
+  before { sign_in :user, current_user }
+
+
+  describe "#show" do
+    subject { -> { get :show, id: comment, format: format } }
+    let(:comment) { blog_post.comments.first }
+
+
+    it_should_behave_like "an action that returns", :html
+    it_should_behave_like "an action that requires", :comment
+  end
+
+
+  describe "#new" do
+    subject { -> { get :new, blog_post_id: blog_post, format: format } }
+
+
+    it_should_behave_like "an action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+    it_should_behave_like "an action that returns", :html
+    it_should_behave_like "an action that requires", :blog_post
+  end
+
+
+  describe "#create" do
+    subject { -> { post :create, blog_post_id: blog_post, comment: params, format: format } }
+    let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+
+    it_should_behave_like "a non-navigation action that requires a login"
+    it_should_behave_like "an action that requires authorization"
+    it_should_behave_like "an action that returns", :html, :json
+    it_should_behave_like "an action that requires", :blog_post
+  end
+end
+
+
+Boom[e][f]
+With a little footwork we now have some handy shared examples to specify the behavior we expect from any controller action. Test-driving out any new controller action becomes a matter of declaring the expected behavior with a few one-liners and then writing our implementation. Conventions like this in our tests keep our controllers idiomatic and conventional as well. Dogs and cats get along, there’s peace in the Middle East, world hunger is ended, and there is much rejoicing.[g]
+
+
+
+
+[a]Maybe just include the code that has changed; or include other code for context and have the new/changed code in bold.
+
+
+Also, one action should be enough for the example.
+[b]True, true. I'll leave this edit until we're actually formatting this in some CMS.
+[c]"...and set the default format __ the top of our spec, we're good to go."
+missing word?
+[d]required
+[e]Crushed it?
+[f]http://imgur.com/s3GxR7z
+[g]cute... but... maybe the wrap up aims a skosh lower than controversial world political issues? :)

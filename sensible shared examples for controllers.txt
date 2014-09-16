@@ -1,0 +1,215 @@
+﻿ONE
+Much ink has been spilt over the concept of “skinny controller, fat model” in Rails. (links to 5 million blog posts)
+
+
+In fact, the concept of a “skinny controller” is nearly concomitant with the origin of MVC itself.
+ From the c2 wiki: (link:  http://c2.com/cgi/wiki?ModelViewController)
+
+
+“An easy way to understand MVC: the model is the data, the view is the window on the screen, and the controller is the glue between the two.”
+“We need SMART Models, THIN Controllers, and DUMB Views”
+
+
+So even since the conception of MVC, a controller has always been a thin glue between the model and view layer.
+
+
+Since Rails is a web application framework especially suited to writing RESTful web services, the controller takes on a unique role. As the glue between our application data and what’s rendered to the user’s browser, Rails controllers are specifically responsible for handling requests and then returning the appropriate response. If you architect your app to be RESTful and resource-driven, your controllers become dead simple: they either retrieve, create, update, or destroy a given resource, maybe with some authorization in between.
+
+
+If we follow the Rails idiom we get nice, clean, declarative controllers that are almost like a config file in their simplicity. This action requires authorization, this action does not; this action responds to HTML and JSON, this one, only JSON.
+
+
+- Why and how does Rails provide a uniquely simple way to write controllers?
+- Why is this a good thing?
+This let’s us focus on the right concerns -- access, formats, proper responses, etc -- at the right layer of our app.
+TWO
+Despite this simplicity, or possibly because of it, many people are confused about effective ways to test controllers.
+
+
+Because of controllers’ glue-like nature, many controller specs tend to employ this technique:
+http://i.imgur.com/dfdezTE.jpg
+
+
+describe CommentsController do
+  subject { { post :create, post_id: post, params } }
+  let(:post) { posts(:skinny_controllers_fat_wallets) }
+
+
+  context "with good params" do
+    it "should create a new comment" do
+      Comment.should_receive(:create)
+      subject.call
+    end
+
+
+    its(:response).should be_ok
+  end
+end
+
+
+Needs more of an example of shitty controller tests
+
+
+This is a bad tack to take because it’s very tightly coupled to an implementation. How useful is a test like this in catching regressions? In driving well-factored code? This isn’t going to catch any regressions, though you’ll certainly have to change it every time you change your controller’s implementation. Further -- and this is the real problem -- it’s not helping you write well-factored code. A colleague of mine likes to call these “ceremonial specs.” They exist to make you feel good that you have some code coverage but that’s where their usefulness ends.
+
+
+Another especially pernicious trend common to controller specs is the absence of tests around things we actually care about like what kinds of formats the controller responds to, which actions require authorization etc.
+
+
+Some people will certainly argue that to test this is simply “testing Rails” -- a big no, no. But in fact, we’re testing that we’ve used Rails correctly. Further, we want our tests to actually drive out our code.
+
+
+When we write idiomatic Rails controllers, we only care about a few big things like whether or not the action fetches a resource or it creates one. Then there's the details: does the action require authentication? Does it require authorization? Does it return HTML or JSON and so on.
+
+
+These aren’t “details” in the sense that they’re unimportant or just a matter of polish. These details really are the glue that keeps the app together. The reason tests for these concerns often fall by the wayside is that writing them gets repetitive.
+
+
+This is a good thing. Core concerns of our application should and often are abstracted away (Rail’s `respond_to` is n example). However, we still want to be sure that we’re invoking these abstractions when we mean to.
+
+
+If we were to test this by stubbing out everything that the controller touches, it would certainly be verbose and repetitive. If only there were some sort of mechanism in Rspec to help us ease the pain of repetitive testing...
+
+
+THREE - Shared examples for sensible controller testing
+
+
+Wouldn’t it be nice if there were a way to simply declare the things we expect from our individual controller actions? Here, Rspec shared examples really shine. With the set of shared examples below you can drive out controller behavior in a sensible way. Does this action require authentication? Authorization? Is it intended to be consumed as a JSON API or does it return HTML? You simply use these shared examples to specify the intended behavior and off you go.
+
+
+These Rspec shared examples help you drive out the repetitive parts of your controller in a nice declarative fashion. They keep your controller tests simple, and by virtue of that, your controllers simple.
+
+
+spec/support/shared_examples/controllers.rb
+# Any *page* which requires login (as opposed to an API action)
+# Redirects to the sign in path
+shared_examples_for "an action that requires a login" do
+  before { sign_out :user }
+  it { should respond_with_redirect_to(sign_in_path) }
+end
+
+
+# Requires authentication but does not redirect (e.g. an API-only action)
+# Returns 401 http://flic.kr/p/aV6jwe
+shared_examples_for "a non-navigational action that requires a login" do
+  before { sign_out :user }
+  it { should respond_with_status(:unauthorized) }
+end
+
+
+# Authenticated but unauthorized users get 404 http://flic.kr/p/aV6juR
+# Here “Mallory” is a fixture user who is not authorized for any action
+shared_examples_for "an action that requires authorization" do
+  before { sign_in :user, users(:mallory) }
+  it { should respond_with_status(:missing) }
+end
+
+
+# Assert the acceptable formats for a given action
+# Unacceptable formats return 406 http://flic.kr/p/aV6jxa
+shared_examples_for "an action that returns" do |*acceptable_formats|
+  acceptable_formats.each do |acceptable_format|
+    context "expecting a response in #{acceptable_format} format" do
+      let(:format) { acceptable_format }
+      it { should_not respond_with_status(:not_acceptable) }
+    end
+  end
+
+
+  (%i(html js json xml csv) - acceptable_formats.collect(&:to_sym)).each do |unacceptable_format|
+    context "expecting a response in #{unacceptable_format} format" do
+      let(:format) { unacceptable_format }
+      it { should respond_with_status(:not_acceptable) }
+    end
+  end
+end
+
+
+# Assert that if any of the specified resources are nil we return 404 http://flic.kr/p/aV6juR
+shared_examples_for "an action that requires" do |*resources|
+  resources.each do |resource|
+    context "with an invalid or missing #{resource}" do
+      let(resource) { double(to_param: "does-not-exist", reload: nil) }
+      it { should respond_with_status(:missing) }
+    end
+  end
+end
+
+
+# Assert that this action requires SSL
+shared_examples_for "an action that requires SSL" do
+  context "without SSL" do
+    before { request.env['HTTPS'] = 'off' }
+    it { should respond_with_status(:redirect) }
+  end
+end
+
+
+Now you're able to write nice, tight (but also comprehensive!) controller tests like...
+
+
+describe CommentsController do
+  let(:current_user) { users(:claude) }
+  let(:post) { posts(:skinny_controllers_fat_wallets) }
+  let(:format) { :html }
+
+
+  before { sign_in :user, current_user }
+
+
+  describe "#show" do
+    subject { -> { get :show, id: comment, format: format } }
+    let(:comment) { post.comments.first }
+
+
+    it_should_behave_like "an commention that requires a login"
+    it_should_behave_like "an commention that requires authorization"
+    it_should_behave_like "an commention that returns", :html
+    it_should_behave_like "an commention that requires", :comment
+
+
+    it { should respond_with_template(:show) }
+    it { should assign(:comment) }
+  end
+
+
+  describe "#new" do
+    subject { -> { get :new, post_id: post, format: format } }
+
+
+    it_should_behave_like "an commention that requires a login"
+    it_should_behave_like "an commention that requires authorization"
+    it_should_behave_like "an commention that returns", :html
+    it_should_behave_like "an commention that requires", :post
+
+
+    it { should respond_with_template(:new) }
+    it { should assign(:post, :comment) }
+  end
+
+
+  describe "#create" do
+    subject { -> { post :create, post_id: post, comment: params, format: format } }
+    let(:params) { { in_seconds: 12, in_frames: 14 } }
+
+
+    it_should_behave_like "an commention that requires a login"
+    it_should_behave_like "an commention that requires authorization"
+    it_should_behave_like "an commention that returns", :html
+    it_should_behave_like "an commention that requires", :post
+
+
+    context "with valid params" do
+      it { should change(Comment, :count).by(+1) }
+      it { should respond_with_redirect_to(post) }
+    end
+
+
+    context "with invalid params" do
+      let(:params) { { in_seconds: "" } }
+      it { should_not change(Comment, :count) }
+      it { should respond_with_template(:new) }
+      it { should assign(:post, :comment) }
+    end
+  end
+end
