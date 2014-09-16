@@ -1,0 +1,493 @@
+app/controllers/password_resets_controller.rb - latest
+
+class PasswordResetsController < ApplicationController
+  self.responder = ActionController::Responder
+  responders :flash
+
+  respond_to :html
+
+  skip_before_filter :require_authentication
+
+  def new
+    @password_reset = PasswordReset.new
+    respond_with(@password_reset)
+  end
+
+  def create
+    @password_reset = PasswordReset.create(password_reset_params)
+    respond_with(@password_reset, location: new_user_session_path)
+  end
+
+  def edit
+    @password_reset = PasswordReset.find_by_param!(params[:id])
+    respond_with(@password_reset)
+  end
+
+  def update
+    @password_reset = PasswordReset.find_by_param!(params[:id])
+    @password_reset.update_attributes(password_reset_params)
+    respond_with(@password_reset, location: new_user_session_path)
+  end
+
+  private
+
+  def password_reset_params
+    params.require(:password_reset).permit(:email, :password, :password_confirmation)
+  end
+end
+
+
+
+
+
+
+
+
+
+
+app/models/password_reset.rb
+
+class PasswordReset
+  include ActiveModel::Validations
+  include ActiveModel::Conversion
+
+  validates :email, presence: true, unless: :persisted?
+  validates :password, presence: true, confirmation: true, if: :persisted?
+  validate :user_is_not_locked_out
+
+  class << self
+    def create(params)
+      new(**params.symbolize_keys).tap(&:save)
+    end
+
+    def find_by_param!(param)
+      user = User.find_by_perishable_token!(param)
+      new(user: user, persisted: true)
+    end
+  end
+
+  attr_reader :user
+  attr_accessor :email, :password, :password_confirmation
+
+  def initialize(user: nil, email: nil, persisted: false)
+    @email = email
+    @user = user || User.where('email ILIKE :email', email: @email).first
+    @persisted = persisted
+  end
+
+  def to_param
+    user.try(:perishable_token)
+  end
+
+  def save
+    if valid?
+      if persisted?
+        user.update_attributes(password: password, password_confirmation: password_confirmation)
+      else
+        user.try(:deliver_password_reset_instructions!)
+      end
+    end
+  end
+
+  def update_attributes(attributes)
+    attributes.each { |attr, value| self.send(:"#{attr}=", value) }
+    save
+  end
+
+  def persisted?
+    @persisted
+  end
+
+  def to_key
+  end
+
+  private
+
+  def user_is_not_locked_out
+    errors.add(:base, :locked_out) if user.try(:locked_out?)
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+intro password reset spec
+require 'spec_helper'
+
+describe PasswordReset do
+  let(:password_reset) { PasswordReset.new(email: email) }
+  let(:email) { user.email }
+  let(:user) { users(:francine) }
+
+  describe ".find_by_param!" do
+    subject { PasswordReset.find_by_param!(param) }
+
+    context "with a param that matches a user token" do
+      let(:param) { user.perishable_token }
+      its(:user) { should == user }
+      its(:persisted?) { should be_true }
+    end
+
+    context "with a param that doesn't match a user token" do
+      let(:param) { "foolishness" }
+      it "should raise an exception" do
+        expect { subject }.to raise_error(ActiveRecord::RecordNotFound)
+      end
+    end
+  end
+
+  describe "validations" do
+    subject { password_reset }
+
+    context "on create" do
+      before { password_reset.should_not be_persisted }
+
+      it { should validate_presence_of(:email) }
+      it { should_not validate_presence_of(:password) }
+      it { should_not validate_confirmation_of(:password) }
+    end
+
+    context "on update" do
+      let(:password_reset) { PasswordReset.find_by_param!(user.perishable_token) }
+
+      it { should_not validate_presence_of(:email) }
+      it { should validate_presence_of(:password) }
+      it { should validate_confirmation_of(:password) }
+    end
+  end
+
+  describe "#to_param" do
+    subject { password_reset.to_param }
+    it { should == user.perishable_token }
+  end
+
+  describe "on create" do
+    subject { -> { password_reset.save } }
+    before { password_reset.should_not be_persisted }
+
+    context "when the email belongs to a user" do
+      it { should deliver_email.to(email) }
+    end
+
+    context "when the email doesn't belong to a user" do
+      let(:email) { "not-a-user@example.com" }
+      it { should_not deliver_email }
+    end
+  end
+
+  describe "on update" do
+    subject { -> { password_reset.save; user.reload } }
+    let(:password_reset) { PasswordReset.find_by_param!(user.perishable_token) }
+
+    before do
+      password_reset.password = "new password"
+      password_reset.password_confirmation = "new password"
+    end
+
+    context "when valid" do
+      before { password_reset.stub(valid?: true) }
+      it { should change(user, :crypted_password) }
+      it { should_not deliver_email }
+    end
+
+    context "when not valid" do
+      before { password_reset.stub(valid?: false) }
+      it { should_not change(user, :crypted_password) }
+      it { should_not deliver_email }
+    end
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+intro password reset
+class PasswordReset
+  include ActiveModel::Validations
+
+  validates :email, presence: true, unless: :persisted?
+  validates :password, presence: true, confirmation: true, if: :persisted?
+
+  class << self
+    def create(params)
+      new(**params.symbolize_keys).tap(&:save)
+    end
+
+    def find_by_param!(param)
+      user = User.find_by_perishable_token!(param)
+      new(user: user, persisted: true)
+    end
+  end
+
+  attr_reader :user
+  attr_accessor :email, :password, :password_confirmation
+
+  def initialize(user: nil, email: nil, persisted: false)
+    @email = email
+    @user = user || User.find_by_email(email)
+    @persisted = persisted
+  end
+
+  def to_param
+    user.try(:perishable_token)
+  end
+
+  def save
+    if valid?
+      if persisted?
+        user.update_attributes(password: password, password_confirmation: password_confirmation)
+      else
+        user.try(:deliver_password_reset_instructions!)
+      end
+    end
+  end
+
+  def update_attributes(attributes)
+    attributes.each { |attr, value| self.send(:"#{attr}=", value) }
+    save
+  end
+
+  def persisted?
+    @persisted
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+old pw resets controller
+class PasswordResetsController < ApplicationController
+
+  allow_unsigned_users!
+
+  before_filter :load_user_using_perishable_token, :only => [:edit, :update]
+  before_filter :logout_if_logged_in, :except => [:index]
+
+  before_filter :build_new_session_and_investor_and_ensure_post_method, :only => :investor_self_registration
+
+  def index
+    redirect_to login_path unless flash[:notice] || flash[:error]
+  end
+
+  def new
+    @user = User.new
+  end
+
+  def create
+    @user = User.find_by_email(params[:email])
+    if @user
+      mixpanel_track 'User password reset attempt', :user => @user
+
+      @user.deliver_password_reset_instructions!
+      flash[:notice] = I18n.t("password_reset.instructions_sent")
+      redirect_to :action => :index
+    else
+      flash[:error] = I18n.t("password_reset.no_such_user")
+      render :action => :new
+    end
+  end
+
+  def edit
+    render
+  end
+
+  def show
+    redirect_to :action => :new
+  end
+
+  ATTR_ALLOWED = [:name, :password, :password_confirmation, :referrer_present, :referrer_name]
+
+  def update
+    @user.crypted_password = nil # forces password re-validation
+    @user.is_stub = false # to activate name field validation
+    params[:user].slice(*ATTR_ALLOWED).each do |k, v|
+      @user.send "#{k}=", v
+    end
+    if @user.save
+      mixpanel_track 'Successful password successfully', :user => @user
+
+      flash[:notice] = I18n.t("password_reset.succeded")
+      UserSession.create @user # signing in the user immediately
+      if @user.investor_candidate? # used in self-registration
+        redirect_to registration_workflow_path
+      else
+        redirect_to :action => :index # displaying congratulations
+      end
+    else
+      flash[:error] = @user.errors.full_messages.join("; ")
+      @user.is_stub = true if @user.is_stub_changed? # i.e. if it was true previously
+      render :action => :edit
+    end
+  end
+
+  private
+
+  def load_user_using_perishable_token
+    @user = User.find_using_perishable_token(params[:id])
+    if @user.blank? or @user.perishable_token_expired?
+      flash[:error] = I18n.t("password_reset.failed")
+      redirect_to :action => "index"
+    end
+  end
+
+  def logout_if_logged_in
+    UserSession.find.try(:destroy)
+  end
+
+  # This is a copy-paste from UserSessions controller
+  def build_new_session_and_investor_and_ensure_post_method
+    @user_session = UserSession.new
+    @new_investor = Investor.new(company: Company.new)# for investor self-registration
+    @new_investor.managers.build
+    redirect_to login_path unless request.post?
+  end
+
+
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+first simplify of pw resets
+
+class PasswordResetsController < ApplicationController
+  allow_unsigned_users!
+
+  respond_to :html
+
+  def new
+    respond_with(User.new)
+  end
+
+  def create
+    @user = User.find_by_email(params[:email])
+    respond_to do |format|
+      format.html do
+        if @user.present?
+          mixpanel_track 'User password reset attempt', user: @user
+
+          @user.deliver_password_reset_instructions!
+          flash[:notice] = I18n.t("password_reset.instructions_sent")
+          redirect_to new_user_session_path
+        else
+          flash[:alert] = I18n.t("password_reset.no_such_user")
+          render :new
+        end
+      end
+    end
+  end
+
+  def edit
+    @user = User.find_by_perishable_token!(params[:id])
+    respond_to do |format|
+      format.html
+    end
+  end
+
+  def update
+    @user = User.find_by_perishable_token!(params[:id])
+    @user.crypted_password = nil # forces password re-validation
+
+    respond_to do |format|
+      format.html do
+        if @user.update_attributes(params[:user])
+          mixpanel_track 'Successful password successfully', user: @user
+          flash[:notice] = I18n.t("password_reset.succeded")
+          redirect_to new_user_session_path
+        else
+          flash[:alert] = @user.errors.full_messages.join("; ")
+          render :edit
+        end
+      end
+    end
+  end
+end
+
+
+
+
+
+
+
