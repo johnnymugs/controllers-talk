@@ -43,14 +43,6 @@ http://buildgroundwork.com
 - I've worked on countless Rails projects
 - No one seems to know what to do with controller tests
 - Why I came to give this talk
-Neither did I!
-{:/comment}
-
-# One day...
-{::comment}
-  one day I started working on a project with a dev much senior to me
-  he had strong opinions about controllers
-  he employed a unique strategy
 {:/comment}
 
 # Controller Testing Hall of Shame
@@ -84,21 +76,35 @@ Neither did I!
 
 # Stub all the things
 
-    # comment
-    def method_name
-      body
-      # what is the what is the what
+    describe "#show" do
+      subject { -> { get :show, id: id } }
+      let(:id) { '77' }
+      let(:pizza) { Pizza.new }
+
+      context "with an existing pizza" do
+        before { Pizza.should_receive(:find).with(id).and_return(pizza) }
+        it { assigns(:pizza).should == pizza }
+      end
+
+      context "with a non-existent pizza" do
+        before { Pizza.should_receive(:find).with(id).and_raise_error(ActiveRecord::RecordNotFound)
+        it { should raise_error(ActiveRecord::RecordNotFound) }
+      end
     end
 {: lang="ruby"}
 {::comment}
   - so think about this in terms of what we just talked about
   - too coupled to implementation
   - does nothing for OO design
-  TODO: write this
 {:/comment}
 
 # Everything is integration
-As a user...
+
+    As a user
+    Given there is a pepperoni pizza
+    When I visit the pizza index page
+    And I click on "pepperoni"
+    Then I should see the pepperoni pizza
 {::comment}
   - Despite DHH, no.
   - Does this drive good design? No! Your controller could be utter spaghetti code
@@ -111,8 +117,16 @@ As a user...
   You would be surprised how common this is, even among hardcore TDDers
 {:/comment}
 
+# Often the things that really matter are untested
+{::comment}
+  the worst thing about all these approaches is that they test things common to ALL rails controllers
+  and they miss the things that are unique to specific controllers
+  TODO: is this the right place for this?
+{:/comment}
+
 # Why does this happen?
 {::comment}
+  I've thought a lot about why this happens...
   Controllers are a funny thing. They are glue.
 
   TODO: expand on this!
@@ -120,6 +134,7 @@ As a user...
 - There is something unique about Rails controllers that confuses people
 - there's not a lot of logic, or there shouldn't be!
 TODO: there really is room for improvement/expansion here
+TODO: the order of these few slides could be improved
 
 {:/comment}
 
@@ -129,7 +144,14 @@ That's what leads to these anti-patterns
 
 # People are confused about what to test
 
-# But there's hope!
+# So was I!
+
+# One day...
+{::comment}
+  one day I started working on a project with a dev much senior to me
+  he had strong opinions about controllers
+  he employed a unique strategy **TODO: own slide or what?
+{:/comment}
 
 # Rails controllers (+ responders) are awesomely declarative
 {::comment}
@@ -144,6 +166,11 @@ this is a term i'll toss around a lot so let's define it
 
 - Describe properties of the thing we want
 - No logic (really!)
+
+# Imperative / Declarative
+{::comment}
+  declarative as a spectrum
+{:/comment}
 
 # Imperative
 
@@ -161,30 +188,9 @@ this is a term i'll toss around a lot so let's define it
 
 "This controller returns a resource represented as JSON or HTML."
 
-# Imperative / Declarative
-{::comment}
-  declarative as a spectrum
-{:/comment}
-
 # Ruby is imperative but it lets us write declarative code
 
 # Look at how declarative Rails controllers can be
-{::comment}
-TODO: fill this out
-TODO: do people know about responders?
-{:/comment}
-
-# Rails 4
-{::comment}
-everyone knows about Rails responders at this point I hope
-TODO: deeper explanation
-{:/comment}
-
-# respond_to
-    # quickly declare formats
-
-    respond_to :html, :json
-{: lang="ruby"}
 
 # before_filter
 
@@ -205,6 +211,17 @@ TODO: deeper explanation
     # Using CanCan gem
 
     before_filter :load_and_authorize_resource :some_resource
+{: lang="ruby"}
+
+# Rails 4 + Responders
+{::comment}
+everyone knows about Rails responders at this point I hope
+{:/comment}
+
+# respond_to
+    # quickly declare formats
+
+    respond_to :html, :json
 {: lang="ruby"}
 
 # NEW
