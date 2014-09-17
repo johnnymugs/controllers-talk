@@ -146,6 +146,20 @@ That's what leads to these anti-patterns
 
 # So was I!
 
+# "Big" concerns vs. "small" concerns
+
+# "Big" concerns should be the same!
+
+- create
+- read
+- update
+- destroy
+
+# "Small" concerns are actually the most important
+- Require authentication?
+- Who is authorized?
+- What formats?
+
 # One day...
 {::comment}
   one day I started working on a project with a dev much senior to me
@@ -314,55 +328,133 @@ You'll notice these are very repetitive in implementation
 
 {::comment}
 TODO: consider doing before / after
+TODO: look over these and make sure they still make sense
 {:/comment}
 
 # Authentication
 
+    describe CommentsController do
+      let(:current_user) { users(:claude) }
+      let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+      describe "#new" do
+        subject { -> { get :new, blog_post_id: blog_post } }
+
+
+        context "with a logged in user" do
+          it "should not redirect to the login page" do
+            response.should_not be_redirect
+          end
+        end
+
+
+        context "with an unauthenticated user" do
+          it "should redirect to the login page" do
+            response.should be_redirect_to(sign_in_path)
+          end
+        end
+      end
+    end
+{: lang="ruby"}
+
 # Authentication shared example
+
+    shared_examples_for "an action that requires a login" do
+      before { sign_out :user }
+      it { should respond_with_redirect_to(sign_in_path) }
+    end
+
+{: lang="ruby"}
 {::comment}
-TODO: fil this out
+  obviously you could have a non-navigational  shared example for JSON
 {:/comment}
 
 # Authentication shared example in action
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    describe CommentsController do
+      let(:current_user) { users(:claude) }
+      let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+
+      describe "#new" do
+        subject { -> { get :new, blog_post_id: blog_post } }
+
+        it_should_behave_like "an action that requires a login"
+      end
+    end
+{: lang="ruby"}
 
 # Authorization
+{::comment}
+TODO: left off here
+{:/comment}
+
+    describe "#create" do
+      subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+      let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+      context "with an authorized user" do
+        response
+      end
+
+      context "with an unauthorized user" do
+      end
+    end
+{: lang="ruby"}
+
+# "Malicious Mallory"
 
 # Authorization shared example
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    shared_examples_for "an action that requires authorization" do
+      before { sign_in :user, users(:mallory) }
+      it { should respond_with_status(:missing) }
+    end
+
+{: lang="ruby"}
 
 # Authorization shared example in action
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    describe "#create" do
+      subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+      let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+
+      it_should_behave_like "a non-navigation action that requires a login"
+      it_should_behave_like "an action that requires authorization"
+    end
+{: lang="ruby"}
 
 # Presence
+{: lang="ruby"}
 
 # Presence shared example
 {::comment}
 TODO: fil this out
 {:/comment}
+{: lang="ruby"}
 
 # Presence shared example in action
 {::comment}
 TODO: fil this out
 {:/comment}
+{: lang="ruby"}
 
 # Response
+{: lang="ruby"}
 
 # Response shared example
 {::comment}
 TODO: fil this out
 {:/comment}
+{: lang="ruby"}
 
 # Response shared example in action
 {::comment}
 TODO: fil this out
 {:/comment}
+{: lang="ruby"}
 
 # Your test is like a check list
 {::comment}
