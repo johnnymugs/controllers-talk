@@ -105,6 +105,7 @@ http://buildgroundwork.com
     When I visit the pizza index page
     And I click on "pepperoni"
     Then I should see the pepperoni pizza
+
 {::comment}
   - Despite DHH, no.
   - Does this drive good design? No! Your controller could be utter spaghetti code
@@ -215,16 +216,24 @@ this is a term i'll toss around a lot so let's define it
 
 # before_filter
 
+    # let's us do things like
+
+    before_filter :load_some_model, except: [:new, :index]
+{: lang="ruby"}
+
+
+# Authorization
+
     # Using Authority gem
 
-    before_filter :authorize_actions_for SomeResource 
+    authorize_actions_for SomeResource 
 {: lang="ruby"}
 
 # before_filter
 
     # Using CanCan gem
 
-    before_filter :load_and_authorize_resource :some_resource
+    load_and_authorize_resource :some_resource
 {: lang="ruby"}
 
 # Rails 4 + Responders
@@ -341,13 +350,11 @@ TODO: look over these and make sure they still make sense
       describe "#new" do
         subject { -> { get :new, blog_post_id: blog_post } }
 
-
         context "with a logged in user" do
           it "should not redirect to the login page" do
             response.should_not be_redirect
           end
         end
-
 
         context "with an unauthenticated user" do
           it "should redirect to the login page" do
@@ -386,19 +393,28 @@ TODO: look over these and make sure they still make sense
 {: lang="ruby"}
 
 # Authorization
-{::comment}
-TODO: left off here
-{:/comment}
 
     describe "#create" do
       subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+
       let(:params) { { body: "What a great post. I loved the part about shared examples." } }
 
+      before { sign_in :user, current_user }
+
       context "with an authorized user" do
-        response
+        let(:current_user) { users(:bob) }
+
+        it "should respond with created" do
+          response.should respond_with 201
+        end
       end
 
       context "with an unauthorized user" do
+        let(:current_user) { users(:mallory) }
+
+        it "should respond with 404" do
+          response.should respond_with 404
+        end
       end
     end
 {: lang="ruby"}
@@ -409,17 +425,18 @@ TODO: left off here
 
     shared_examples_for "an action that requires authorization" do
       before { sign_in :user, users(:mallory) }
-      it { should respond_with_status(:missing) }
+      it { should respond_with 404 }
     end
-
 {: lang="ruby"}
 
 # Authorization shared example in action
 
     describe "#create" do
       subject { -> { post :create, blog_post_id: blog_post, comment: params } }
+
       let(:params) { { body: "What a great post. I loved the part about shared examples." } }
 
+      before { sign_in :user, users(:bob) }
 
       it_should_behave_like "a non-navigation action that requires a login"
       it_should_behave_like "an action that requires authorization"
@@ -427,33 +444,88 @@ TODO: left off here
 {: lang="ruby"}
 
 # Presence
+{::comment}
+TODO: fill this out -- maybe
+{:/comment}
 {: lang="ruby"}
 
 # Presence shared example
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    shared_examples_for "an action that requires" do |*resources|
+      resources.each do |resource|
+        context "with an invalid or missing #{resource}" do
+          let(resource) { double(to_param: "does-not-exist", reload: nil) }
+          it { should respond_with 404 }
+        end
+      end
+    end
 {: lang="ruby"}
 
 # Presence shared example in action
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    describe CommentsController do
+      let(:current_user) { users(:claude) }
+      let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+
+      before { sign_in :user, current_user }
+
+      describe "#show" do
+        subject { -> { get :show, id: comment, format: format } }
+        let(:comment) { blog_post.comments.first }
+
+        it_should_behave_like "an action that requires", :comment
+      end
 {: lang="ruby"}
 
 # Response
+{::comment}
+TODO: fil this out -- maybe
+{:/comment}
 {: lang="ruby"}
 
 # Response shared example
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    shared_examples_for "an action that returns" do |*acceptable_formats|
+      acceptable_formats.each do |acceptable_format|
+        context "expecting a response in #{acceptable_format} format" do
+          let(:format) { acceptable_format }
+          it { should_not respond_with_status(:not_acceptable) }
+        end
+      end
+
+
+      (%i(html js json xml csv) - acceptable_formats.collect(&:to_sym)).each do |unacceptable_format|
+        context "expecting a response in #{unacceptable_format} format" do
+          let(:format) { unacceptable_format }
+          it { should respond_with_status(:not_acceptable) }
+        end
+      end
+    end
 {: lang="ruby"}
 
 # Response shared example in action
-{::comment}
-TODO: fil this out
-{:/comment}
+
+    describe CommentsController do
+      let(:current_user) { users(:claude) }
+      let(:blog_post) { blog_posts(:skinny_controller_fat_wallet) }
+      let(:format) { :html }
+
+      before { sign_in :user, current_user }
+
+      describe "#show" do
+        subject { -> { get :show, id: comment, format: format } }
+        let(:comment) { blog_post.comments.first }
+
+        it_should_behave_like "an action that returns", :html
+      end
+
+      describe "#create" do
+        subject { -> { post :create, blog_post_id: blog_post, comment: params, format: format } }
+        let(:params) { { body: "What a great post. I loved the part about shared examples." } }
+
+        it_should_behave_like "an action that returns", :html, :json
+      end
+    end
 {: lang="ruby"}
 
 # Your test is like a check list
@@ -466,6 +538,7 @@ TODO: fil this out
 - Likes/Bookmarks/Ratings
 - Bulk creates
 - Merging records
+- Actions that touch several models
 
 # "Skinny controller, fat model"
 
@@ -473,17 +546,22 @@ TODO: fil this out
 
 # 5/6 projects suffer from bloated controllers
 
+{::comment}
 - The reason is that the controller is a lazy place to stash stuff
 - Laziness is a programmer virtue
 - Take my advice and set yourself up for long term laziness
+{/:comment}
 
-# A divergence
 {::comment}
 TODO: let's talk about motherfucking resources now.
 TODO: a better transition here would be great
-{/::comment}
+{/:comment}
 
 # ActiveModel
+
+# There is no resource too small
+
+# Models are cheap, especially ones not tied to the DB
 
 # Use it!
 
@@ -491,94 +569,23 @@ TODO: a better transition here would be great
 
 # Password Reset
 
-Client wants to implement a simple password reset
-
-`/password_reset_requests/new`
-`/password_reset_requests/create`
+Client wanted to overhaul a legacy password reset workflow
 
 # Suspend your dis-belief, they are not using Devise yet
 
-# Legacy code base
-
-`User.send_password_reset_email!`
-
 # Too simple to break out into a model?
-{::comment}
-There is existing code for tokens and stuff or what?
-{::/comment}
-
-{::comment}
-TODO:look this code up from a2
-{::/comment}
-
-# Okay, it just fires off a job
-{::comment}
-TODO: show the spec and it's slow divergence from nice controller
-{::/comment}
-
 
 # Requirements always change
+
 "Ah but wait, we want to tell users if they put in their e-mail wrong."
 
-# Seems easy enough to just add in the controller...
-
-# Add to our spec...
-
-`````
-context "with an e-mail for an existing user" do
-...
-end
-
-context "with an e-mail for a _____________" do
-...
-end
-
-`````
-{::comment}
-TODO: finish up here
-{::/comment}
-
-# Add to the implementation...
-
-`````
-if user = User.find_by_email(params[:email])
-  user.send_password_reset_email!
-else
-  flash[:alert] = "Looks like you don't have an account yet"
-end
-`````
-
 # Of course requirements change again
+
 "If the user is locked out of their account, we shouldn't send a password reset."
 
-# Ok, just change the spec...
-
-{::comment}
-TODO: finish up here
-{::/comment}
-
-# Uhhhhh...
-{::comment}
-TODO: finish up here
-{::/comment}
-
-# So where's your great controller strategy now Johnny?
+# Suddenly, a fat controller
 
 # ActiveModel makes it simple
-{::comment}
-TODO: code code code
-{::/comment}
-
-# And our controller is back to being nice and simple
-
-# This might seem contrived but I've seen this and worse
-- just a password_reset action on the users controller
-
-
-# The lesson
-{::comment}
-this is what it's all about, make your web app about resources
-{:/comment}
 
 # Think nouns (resources), not verbs
 
@@ -597,7 +604,15 @@ this is what it's all about, make your web app about resources
   it just helps you develop a habbit
 {:/comment}
 
+# The rewards are great!
+{::comment}
+  after a little footwork your controllers are uniform
+  keeping them slim and uniform is easy
+{:/comment}
+
 # Easier to test
+
+# Drives good design
 
 # Simpler controllers
 
