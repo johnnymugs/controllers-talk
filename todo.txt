@@ -1,0 +1,13 @@
+1) see if you can re-organize the big dteails vs small details discussion
+
+Every controller does one "big thing" -- it create or updates or fetches a resource
+But all these little details matter: auth, auth, response, etc
+
+2) see if you can talk about habbits sooner
+
+3) double check codez
+
+4) try to emphasize that the important part is adjusting thinking, not copying these shared examples
+
+5) make sure conclusion is solid
+

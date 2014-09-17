@@ -8,11 +8,11 @@ author
 
 # Me
 
-* Jonathan Mukai-Heidt
+- Jonathan Mukai-Heidt
 
-* @johnnymukai
+- @johnnymukai
 
-* johnny@buildgroundwork.com
+- johnny@buildgroundwork.com
 
 # Groundwork
 {::comment}
@@ -20,7 +20,18 @@ I'm a software mentor at Groundwork, a new mentorship-focused software consultan
 Maybe elaborate.
 TODO: logo, website link
 {:/comment}
-http://buildgroundwork.com
+
+![](groundwork-logo.png "http://buildgroundwork.com")
+
+# Let's talk controller tests
+
+# Almost no one knows how to test controllers
+{::comment}
+  the reason for all this background is...
+- I've worked on countless Rails projects
+- No one seems to know what to do with controller tests
+- Why I came to give this talk
+{:/comment}
 
 # ...some history
 {::comment}
@@ -37,14 +48,6 @@ http://buildgroundwork.com
   the last three or four years I've worked on dozens of Rails projects
 {:/comment}
 
-# Almost no one knows how to test controllers
-{::comment}
-  the reason for all this background is...
-- I've worked on countless Rails projects
-- No one seems to know what to do with controller tests
-- Why I came to give this talk
-{:/comment}
-
 # Controller Testing Hall of Shame
 {::comment}
   before we get into it though let's look at some strategies that don't work
@@ -58,10 +61,6 @@ http://buildgroundwork.com
 {:/comment}
 
 # Catching regressions
-
-# Spec as documentation
-
-# (And so on)
 
 # Developing code in isolation!!!
 {::comment}
@@ -179,13 +178,14 @@ Let's talk about what's great about controllers!
 this is a term i'll toss around a lot so let's define it
 {:/comment}
 
-- Describe properties of the thing we want
-- No logic (really!)
-
 # Imperative / Declarative
 {::comment}
   declarative as a spectrum
 {:/comment}
+
+# Describe the properties we want
+
+# No logic (really!)
 
 # Imperative
 
@@ -229,7 +229,7 @@ this is a term i'll toss around a lot so let's define it
     authorize_actions_for SomeResource 
 {: lang="ruby"}
 
-# before_filter
+# Authorization
 
     # Using CanCan gem
 
@@ -297,10 +297,6 @@ because controllers should be a simple link between views and models
 # Business logic belongs in models
 You've heard this many times already
 
-# But I thought this talk was about testing?
-
-# Yes!
-
 # Tests should help us write better code
 
 # Declarative controller? Declarative tests!
@@ -314,8 +310,6 @@ to match Rails' awesome declarative controllers
 {::comment}
 okay, how do we do it?
 {:/comment}
-
-# AAPR
 
 # Authentication
 
@@ -614,13 +608,13 @@ Client wanted to overhaul a legacy password reset workflow
 
 # Drives good design
 
-# Simpler controllers
+# Keep controllers simple
 
 # Logic goes in models where it belongs
 
 # No confusion about where things go (bulk creates, likes, etc)
 
-# Uniform controllers == more time spent on things that matter
+# Uniform controllers == less dev time
 
 {::comment}
   TODO: stronger summary
